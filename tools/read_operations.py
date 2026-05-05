@@ -10,7 +10,6 @@ logger = logging.getLogger("notion-mcp-server")
 
 ########### Search Notion Service #############
 def search_notion_service(
-    oauth_token: str,
     query: str = "",
     filter_type: Optional[str] = None,
     page_size: int = 10,
@@ -26,7 +25,7 @@ def search_notion_service(
     if start_cursor:
         body["start_cursor"] = start_cursor
 
-    result = make_notion_request("POST", "/v1/search", oauth_token, body=body)
+    result = make_notion_request("POST", "/v1/search", body=body)
     pages = []
     for item in result.get("results", []):
         title_array = item.get("properties", {}).get("title", {}).get("title", [])
@@ -49,10 +48,10 @@ def search_notion_service(
 
 
 ############## Get Page Service #############
-def get_page_service(oauth_token: str, page_id: str) -> Dict:
+def get_page_service(page_id: str) -> Dict:
     logger.info(f"[get_page] page_id='{page_id}'")
 
-    result = make_notion_request("GET", f"/v1/pages/{page_id}", oauth_token)
+    result = make_notion_request("GET", f"/v1/pages/{page_id}")
 
     if "error" in result:
         logger.error(f"Failed to retrieve page: {page_id}: {result.get('error')}")
@@ -66,7 +65,7 @@ def get_page_service(oauth_token: str, page_id: str) -> Dict:
 
 
 def _fetch_block_children_recursive(
-    oauth_token: str, block_id: str, max_depth: int = 3, current_depth: int = 0
+    block_id: str, max_depth: int = 3, current_depth: int = 0
 ) -> list:
     if current_depth >= max_depth:
         logger.warning(
@@ -83,7 +82,7 @@ def _fetch_block_children_recursive(
             params["start_cursor"] = start_cursor
 
         response = make_notion_request(
-            "GET", f"/v1/blocks/{block_id}/children", oauth_token, params=params
+            "GET", f"/v1/blocks/{block_id}/children", params=params
         )
 
         if "error" in response:
@@ -101,7 +100,7 @@ def _fetch_block_children_recursive(
                     f"Fetching nested children for {block_type} block {block['id']}"
                 )
                 nested_children = _fetch_block_children_recursive(
-                    oauth_token, block["id"], max_depth, current_depth + 1
+                    block["id"], max_depth, current_depth + 1
                 )
                 block["children"] = nested_children
 
@@ -168,7 +167,6 @@ def _simplify_page_response(page_data: dict) -> dict:
 
 ############# Notion Fetch Service #############
 def fetch_page_content_service(
-    oauth_token: str,
     page_id: str,
     include_children: bool = True,
     recursive: bool = False,
@@ -180,7 +178,7 @@ def fetch_page_content_service(
         f"[notion_fetch] page_id='{page_id}', include_children={include_children}, recursive={recursive}"
     )
 
-    page_data = make_notion_request("GET", f"/v1/pages/{page_id}", oauth_token)
+    page_data = make_notion_request("GET", f"/v1/pages/{page_id}")
 
     if "error" in page_data:
         logger.error(f"Failed to fetch page: {page_id}: {page_data.get('error')}")
@@ -190,7 +188,7 @@ def fetch_page_content_service(
         if recursive:
             logger.info(f"Fetching children recursively (max_depth={max_depth})")
             all_children = _fetch_block_children_recursive(
-                oauth_token, page_id, max_depth=max_depth
+                page_id, max_depth=max_depth
             )
             page_data["children"] = all_children
             page_data["has_more_children"] = False
@@ -202,7 +200,7 @@ def fetch_page_content_service(
                 params["start_cursor"] = start_cursor
 
             children_data = make_notion_request(
-                "GET", f"/v1/blocks/{page_id}/children", oauth_token, params=params
+                "GET", f"/v1/blocks/{page_id}/children", params=params
             )
 
             if "error" not in children_data:

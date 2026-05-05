@@ -1,366 +1,461 @@
-# Notion MCP Server
+---
 
-A Model Context Protocol (MCP) server that provides comprehensive access to Notion API endpoints with OAuth authentication.
+**Seamless Notion Integration for MCP**
 
-## Features
+A Model Context Protocol (MCP) server that exposes Notion's API for comprehensive page, database, and user operations.
 
-This MCP server provides the following Notion operations:
+---
 
-### Search & Read Operations
+## Overview
 
-- **search_notion**: Search all pages and databases by title or list all pages
-- **get_page**: Retrieve a Notion page by ID with properties and metadata
-- **fetch_page_content**: Retrieve a page with full content including all child blocks (supports recursive fetching)
+The Notion MCP Server provides a stateless, multi-user interface to interact with Notion:
 
-### Page Management
+- **Page Operations**: Create, update, and fetch pages with full content and property support.
+- **Database Management**: Query data sources, create new databases, and retrieve metadata.
+- **Workspace Navigation**: Search across the entire workspace and access user information.
 
-- **create_page_under_page**: Create a new page under a parent page
-- **create_workspace_page**: Create a new page at workspace level (no parent)
-- **update_page**: Update an existing page's properties, icon, cover, and metadata
-- **append_text_block**: Append various text blocks (paragraphs, headings, lists, etc.) to a page
+Perfect for:
 
-### Database Operations(Not Fully Supported)
+- **Content Automation**: Appending blocks and updating status automatically.
+- **Data Synchronization**: Fetching database records for external analysis.
+- **AI-Powered Workflows**: Allowing models to browse and modify your Notion workspace.
 
-- **get_database**: Retrieve a database object by ID with title, parent, and data sources
-- **get_data_source**: Retrieve a database schema/properties by ID
-- **query_data_source**: Query a database with filtering and sorting
-- **create_database**: Create a new database as a child of an existing page
+---
 
-### User Operations
+## Tools
 
-- **list_users**: List all users in the workspace (guests not included)
-- **get_user**: Retrieve a specific user by their ID
-- **get_self**: Retrieve the bot user associated with your API token
+<details>
+<summary><code>search_notion</code> — Search all pages and databases by title or list all pages</summary>
 
-## Setup
+Search all pages and databases by title, with optional filtering by type. Use an empty query to list all reachable objects.
 
-### 1. Install Dependencies
-
-Using pip:
-
-```bash
-pip install -r requirements.txt
+**Inputs:**
+```
+- `query` (string, optional) — Search query string, keep it empty to list all pages
+- `filter_type` (string, optional) — Filter by 'page' or 'data_source'
+- `page_size` (integer, optional) — Number of pages to return (max 100)
+- `start_cursor` (string, optional) — Pagination cursor
 ```
 
-### 2. Configure Notion OAuth
-
-You need to create a Notion integration with OAuth support:
-
-1. Go to [Notion Developers](https://www.notion.so/my-integrations)
-2. Create a new integration
-3. Configure OAuth settings:
-   - Add redirect URI: `http://localhost:8080` or your client URL
-   - Note your Client ID and Client Secret
-4. Set required capabilities:
-   - Read content
-   - Update content
-   - Insert content
-   - Read user information
-
-### 4. Configure Your MCP Client
-
-#### For Claude Desktop (stdio mode - default)
-
-Add this to your Claude Desktop MCP settings file:
-
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`  
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
-**Linux**: `~/.config/Claude/claude_desktop_config.json`
+**Output:**
 
 ```json
 {
-  "mcpServers": {
-    "notion": {
-      "command": "python",
-      "args": [
-        "D:\\Code\\Curious Layer\\notion_mcp_server\\server.py"
-      ],
-      "cwd": "D:\\Code\\Curious Layer\\notion_mcp_server"
-    }
-  }
+  "result": "List of pages and databases matching the search criteria"
 }
 ```
 
-#### For HTTP/SSE Transport
+</details>
 
-You can run the server with different transport modes:
+---
 
-**Streamable HTTP** (default):
+<details>
+<summary><code>get_page</code> — Retrieve a Notion page by ID with properties and metadata</summary>
 
-```bash
-python server.py --transport streamable-http --host 0.0.0.0 --port 8080
+Retrieve a specific Notion page by its ID, including all properties and metadata.
+
+**Inputs:**
+```
+- `page_id` (string, required) — The ID of the page to retrieve
 ```
 
-**stdio**:
-
-```bash
-python server.py --transport stdio
-```
-
-## Usage Examples
-
-### Search Pages
+**Output:**
 
 ```json
 {
-  "tool": "search_notion",
-  "arguments": {
-    "oauth_token": "your_oauth_token",
-    "query": "meeting notes",
-    "filter_type": "page",
-    "page_size": 10
-  }
+  "result": "Page object with properties and metadata"
 }
 ```
 
-### Create a New Page
+</details>
+
+---
+
+<details>
+<summary><code>fetch_page_content</code> — Retrieve a Notion page with its full content</summary>
+
+Retrieve a Notion page with its full content including all child blocks and properties, with optional recursion.
+
+**Inputs:**
+```
+- `page_id` (string, required) — The ID of the page to fetch
+- `include_children` (boolean, optional) — Whether to include child blocks
+- `recursive` (boolean, optional) — Whether to fetch children recursively
+- `max_depth` (integer, optional) — Maximum depth for recursion
+- `page_size` (integer, optional) — Number of child blocks to return
+- `start_cursor` (string, optional) — Pagination cursor
+```
+
+**Output:**
 
 ```json
 {
-  "tool": "create_page_under_page",
-  "arguments": {
-    "oauth_token": "your_oauth_token",
-    "parent_page_id": "parent-page-id",
-    "title": "My New Page",
-    "position": { "type": "page_end" }
-  }
+  "result": "Page content including all blocks and properties"
 }
 ```
 
-### Fetch Page Content
+</details>
+
+---
+
+<details>
+<summary><code>create_page_under_page</code> — Create a new page under a parent page</summary>
+
+Create a new page as a child of an existing parent page.
+
+**Inputs:**
+```
+- `parent_page_id` (string, required) — The ID of the parent page
+- `title` (string, optional) — Title of the new page
+- `position` (object, optional) — Insert position: `{"type": "page_end"}` or `{"type": "page_start"}`
+```
+
+**Output:**
 
 ```json
 {
-  "tool": "fetch_page_content",
-  "arguments": {
-    "oauth_token": "your_oauth_token",
-    "page_id": "page-id",
-    "include_children": true,
-    "recursive": true,
-    "max_depth": 3
-  }
+  "result": "Metadata of the newly created page"
 }
 ```
 
-### Append Text Block
+</details>
+
+---
+
+<details>
+<summary><code>create_workspace_page</code> — Create a new page at workspace level</summary>
+
+Create a new page at the workspace root level without a parent page.
+
+**Inputs:**
+```
+- `title` (string, optional) — Title of the new page
+```
+
+**Output:**
 
 ```json
 {
-  "tool": "append_text_block",
-  "arguments": {
-    "oauth_token": "your_oauth_token",
-    "block_id": "page-id",
-    "type": "paragraph",
-    "content": "This is a new paragraph",
-    "color": "blue",
-    "position": "end"
-  }
+  "result": "Metadata of the newly created workspace page"
 }
 ```
 
-### Update Page
+</details>
+
+---
+
+<details>
+<summary><code>update_page</code> — Update an existing Notion page's properties and metadata</summary>
+
+Update properties, metadata, and content settings of an existing Notion page.
+
+**Inputs:**
+```
+- `page_id` (string, required) — The ID of the page to update
+- `properties` (object, optional) — Page properties to update
+- `icon` (object, optional) — Page icon settings
+- `cover` (object, optional) — Page cover image settings
+- `archived` (boolean, optional) — Whether to archive the page
+- `in_trash` (boolean, optional) — Whether to move the page to trash
+- `is_locked` (boolean, optional) — Whether to lock the page
+- `template` (object, optional) — Template settings
+- `erase_content` (boolean, optional) — Whether to erase all page content
+```
+
+**Output:**
 
 ```json
 {
-  "tool": "update_page",
-  "arguments": {
-    "oauth_token": "your_oauth_token",
-    "page_id": "page-id",
-    "properties": {
-      "title": {
-        "title": [
-          {
-            "text": {
-              "content": "Updated Title"
-            }
-          }
-        ]
-      }
-    },
-    "archived": false
-  }
+  "result": "Updated page object"
 }
 ```
 
-### Query Database
+</details>
+
+---
+
+<details>
+<summary><code>append_text_block</code> — Append a text block to a page or block</summary>
+
+Append a new text block of various types (paragraph, heading, to-do, etc.) to a page or parent block.
+
+**Inputs:**
+```
+- `block_id` (string, required) — The ID of the page or parent block
+- `type` (string, required) — Type of block: `paragraph`, `heading_1`, `heading_2`, `heading_3`, `bulleted_list_item`, `numbered_list_item`, `to_do`, `toggle`, `quote`, `callout`
+- `content` (string, required) — The text content for the block
+- `checked` (boolean, optional) — Whether the item is checked (for to-dos)
+- `color` (string, optional) — Text or background color (e.g., `red`, `blue_background`)
+- `position` (string, optional) — Insert position: `end` or `start`
+```
+
+**Output:**
 
 ```json
 {
-  "tool": "query_data_source",
-  "arguments": {
-    "oauth_token": "your_oauth_token",
-    "data_source_id": "database-id",
-    "filter": {
-      "property": "Status",
-      "status": {
-        "equals": "In Progress"
-      }
-    },
-    "sorts": [
-      {
-        "property": "Created",
-        "direction": "descending"
-      }
-    ]
-  }
+  "result": "Details of the appended block"
 }
 ```
 
-### Create Database
+</details>
+
+---
+
+<details>
+<summary><code>get_database</code> — Retrieve a database object by ID</summary>
+
+Retrieve a database (data source) by ID with title, parent information, and associated data sources.
+
+**Inputs:**
+```
+- `database_id` (string, required) — The ID of the database to retrieve
+```
+
+**Output:**
 
 ```json
 {
-  "tool": "create_database",
-  "arguments": {
-    "oauth_token": "your_oauth_token",
-    "parent_id": "parent-page-id",
-    "title": "My Database",
-    "properties": {
-      "Name": {
-        "title": {}
-      },
-      "Status": {
-        "select": {
-          "options": [
-            { "name": "To Do" },
-            { "name": "In Progress" },
-            { "name": "Done" }
-          ]
-        }
-      }
-    }
-  }
+  "result": "Database object with metadata"
 }
 ```
 
-## API Parameters
+</details>
 
-### Text Block Types
+---
 
-- `paragraph` - Regular paragraph text
-- `heading_1` - Heading level 1
-- `heading_2` - Heading level 2
-- `heading_3` - Heading level 3
-- `bulleted_list_item` - Bulleted list item
-- `numbered_list_item` - Numbered list item
-- `to_do` - Todo/checkbox item
-- `toggle` - Toggle/collapsible block
-- `quote` - Quote block
-- `callout` - Callout/alert block
+<details>
+<summary><code>get_data_source</code> — Retrieve a data source with schema information</summary>
 
-### Available Colors
+Retrieve a data source (database schema/properties) by ID.
 
-- `default`, `gray`, `brown`, `orange`, `yellow`, `green`, `blue`, `purple`, `pink`, `red`
-- Background colors: Add `_background` suffix (e.g., `blue_background`)
-
-### Filter Types
-
-- `page` - Filter for pages only
-- `data_source` - Filter for databases only
-
-### Position Options
-
-- `page_end` / `end` - Insert at the end
-- `page_start` / `start` - Insert at the beginning
-
-## Deployment
-
-### Railway Deployment
-
-This server is configured for Railway deployment with `railway.json`:
-
-```bash
-# Deploy to Railway
-railway up
+**Inputs:**
+```
+- `data_source_id` (string, required) — The ID of the data source to retrieve
 ```
 
-The server will run on port 8080 using streamable-http transport.
+**Output:**
 
-### Environment Variables
-
-For production deployment, set:
-
-- `NOTION_CLIENT_ID` - Your Notion OAuth client ID
-- `NOTION_CLIENT_SECRET` - Your Notion OAuth client secret
-
-## Troubleshooting
-
-### Permission Denied
-
-Ensure your Notion integration has the required capabilities:
-
-1. Go to [Notion My Integrations](https://www.notion.so/my-integrations)
-2. Select your integration to public
-3. Verify all required capabilities are enabled
-4. Share pages/databases with your integration
-
-### Rate Limiting
-
-Notion API has rate limits. If you experience rate limit errors (HTTP 429):
-
-- Reduce `page_size` parameters
-- Add delays between bulk operations
-- Check Notion API status page
-
-### Connection Issues
-
-If the server fails to start:
-
-1. Check if the port is already in use
-2. Verify Python version (3.12+ recommended)
-3. Ensure all dependencies are installed
-4. Check firewall settings for HTTP transport
-
-## Security Notes
-
-- **Never commit OAuth tokens** to version control
-- Keep your `NOTION_CLIENT_SECRET` secure
-- The server is stateless - each request requires an `oauth_token`
-- OAuth tokens expire and need to be refreshed periodically
-- Use HTTPS in production environments
-
-## Logging
-
-The server logs all operations with timestamps:
-
-- `INFO`: Normal operations and API calls
-- `WARNING`: Rate limits and warnings
-- `ERROR`: API failures and authentication issues
-
-Logs include:
-
-- Request type and parameters
-- Response status
-- Error details with stack traces
-
-## Architecture
-
-This is a **stateless server** that:
-
-- Does not store OAuth tokens
-- Requires `oauth_token` parameter in every request
-- Supports multi-user scenarios
-- Is horizontally scalable
-
-### Project Structure
-
-```
-notion_mcp_server/
-├── tools/
-│   ├── __init__.py
-│   ├── read_operations.py      # Search, get, fetch operations
-│   └── write_operations.py     # Create, update, append operations
-    |__ user_operations.py      # User-related operations
-    |__ database_operations.py  # Database-related operations
-├── utils/
-│   └── notion_utils.py         # HTTP request utilities
-├── notion_mcp_server.py        # Main server file
-├── requirements.txt            # Python dependencies
-└── railway.json                # Railway deployment config
+```json
+{
+  "result": "Data source object with properties and schema"
+}
 ```
 
-## Resources
+</details>
 
-- [Notion API Documentation](https://developers.notion.com/)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
-- [FastMCP Documentation](https://github.com/jlowin/fastmcp)
+---
+
+<details>
+<summary><code>query_data_source</code> — Query a data source (database) with filters and sorting</summary>
+
+Query a database to retrieve pages with optional filtering and sorting.
+
+**Inputs:**
+```
+- `data_source_id` (string, required) — The ID of the data source (database)
+- `filter` (object, optional) — Notion filter object
+- `sorts` (array, optional) — Notion sorts array
+- `page_size` (integer, optional) — Number of records to return
+- `start_cursor` (string, optional) — Pagination cursor
+```
+
+**Output:**
+
+```json
+{
+  "result": "List of database entries matching the query"
+}
+```
+
+</details>
+
+---
+
+<details>
+<summary><code>create_database</code> — Create a new database as a child of a page</summary>
+
+Create a new database (inline or full) under an existing page.
+
+**Inputs:**
+```
+- `parent_id` (string, required) — The ID of the parent page
+- `title` (string, optional) — Title of the database
+- `description` (string, optional) — Description of the database
+- `properties` (object, optional) — Database properties/schema
+- `is_inline` (boolean, optional) — Whether the database is inline
+- `icon` (object, optional) — Database icon settings
+- `cover` (object, optional) — Database cover image settings
+```
+
+**Output:**
+
+```json
+{
+  "result": "Metadata of the newly created database"
+}
+```
+
+</details>
+
+---
+
+<details>
+<summary><code>list_users</code> — List all users in the workspace</summary>
+
+List all users in the workspace (excluding guests).
+
+**Inputs:**
+```
+- `page_size` (integer, optional) — Number of users to return per page
+- `start_cursor` (string, optional) — Pagination cursor
+```
+
+**Output:**
+
+```json
+{
+  "result": "List of workspace users"
+}
+```
+
+</details>
+
+---
+
+<details>
+<summary><code>get_user</code> — Retrieve a specific user by ID</summary>
+
+Retrieve information about a specific user in the workspace.
+
+**Inputs:**
+```
+- `user_id` (string, required) — The ID of the user to retrieve
+```
+
+**Output:**
+
+```json
+{
+  "result": "User object with profile information"
+}
+```
+
+</details>
+
+---
+
+<details>
+<summary><code>get_self</code> — Retrieve the bot user associated with your API token</summary>
+
+Retrieve the bot user associated with your API token, including owner and workspace information.
+
+**Inputs:**
+```
+None
+```
+
+**Output:**
+
+```json
+{
+  "result": "Bot user object with workspace and owner details"
+}
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>API Parameters Reference</strong></summary>
+
+### Common Parameters
+
+- `page_size` — Maximum number of items to return in a single request (default: 20 or 100 depending on tool).
+- `start_cursor` — Token used for pagination to retrieve the next set of results.
+- `filter` — A structured object used to narrow down results based on specific criteria.
+
+### Resource Formats
+
+**Notion ID:**
+
+```
+32-character hexadecimal string, often formatted with hyphens.
+Example: 834c6e94-0d70-4f52-87a4-82a1789c6d48
+```
+
+**Block Type:**
+
+```
+String indicating the structure of the block.
+Example: paragraph, heading_1, to_do
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>Troubleshooting</strong></summary>
+
+### **Missing or Invalid Curious Layer API Key**
+
+- **Cause:** API key not provided in request headers or incorrect format
+- **Solution:**
+  1. Verify `Authorization: Bearer YOUR_API_KEY` header is present
+  2. Check API key is active in your Curious Layer account
+  3. Regenerate API key if expired
+
+### **Insufficient Credits**
+
+- **Cause:** API calls have exceeded your request limits
+- **Solution:**
+  1. Check credit usage in your Curious Layer dashboard
+  2. Upgrade to a paid plan or add credits for higher limits
+  3. Contact support for credit adjustments
+
+### **Credential Not Connected**
+
+- **Cause:** No Notion credential linked to your account
+- **Solution:**
+  1. Go to **Credentials** in your MewCp dashboard
+  2. Connect your Notion account (OAuth)
+  3. Retry the request with the correct `X-Mewcp-Credential-Id` header
+
+### **Malformed Request Payload**
+
+- **Cause:** JSON payload is invalid or missing required fields
+- **Solution:**
+  1. Validate JSON syntax before sending
+  2. Ensure all required tool parameters are included
+  3. Check parameter types match expected values
+
+### **Server Not Found**
+
+- **Cause:** Incorrect server name in the API endpoint
+- **Solution:**
+  1. Verify endpoint format: `notion-mcp-server/mcp/{tool-name}`
+  2. Use correct server name from documentation
+  3. Check available servers in your Curious Layer account
+
+### **Notion API Error**
+
+- **Cause:** Upstream Notion API returned an error
+- **Solution:**
+  1. Check Notion service status at [Notion Status Page](https://status.notion.so/)
+  2. Verify your credential has the required permissions (scopes)
+  3. Review the error message for specific details
+
+</details>
+
+---
+
+<details>
+<summary><strong>Resources</strong></summary>
+
+- **[Notion API Documentation](https://developers.notion.com/docs)** — Official API reference
+- **[Notion API Reference](https://developers.notion.com/reference/intro)** — Complete endpoint reference
+- **[FastMCP Docs](https://gofastmcp.com/v2/getting-started/welcome)** — FastMCP specification
+- **[FastMCP Credentials](https://pypi.org/project/fastmcp-credentials/)** — FastMCP Credentials package for credential handling
+
+</details>

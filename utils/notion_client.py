@@ -4,6 +4,7 @@ import logging
 from typing import Dict, Optional
 
 import requests
+from fastmcp_credentials import get_credentials
 
 NOTION_API_BASE = "https://api.notion.com"
 NOTION_VERSION = "2025-09-03"
@@ -11,10 +12,13 @@ NOTION_VERSION = "2025-09-03"
 logger = logging.getLogger("notion-mcp-server")
 
 
-def get_headers(oauth_token: str) -> Dict[str, str]:
-    """headers for Notion API requests - stateless per request"""
+def get_headers() -> Dict[str, str]:
+    """Headers for Notion API requests with resolved credentials"""
+    cred = get_credentials()
+    if not cred.access_token:
+        raise ValueError("Credential must have access_token")
     return {
-        "Authorization": f"Bearer {oauth_token}",
+        "Authorization": f"Bearer {cred.access_token}",
         "Notion-Version": NOTION_VERSION,
         "Content-Type": "application/json",
     }
@@ -23,12 +27,11 @@ def get_headers(oauth_token: str) -> Dict[str, str]:
 def make_notion_request(
     method: str,
     endpoint: str,
-    oauth_token: str,
     body: Optional[Dict] = None,
     params: Optional[Dict] = None,
 ) -> Dict:
     """request handler for Notion API"""
-    headers = get_headers(oauth_token)
+    headers = get_headers()
     url = f"{NOTION_API_BASE}{endpoint}"
 
     try:

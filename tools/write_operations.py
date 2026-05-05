@@ -38,7 +38,6 @@ def _build_create_page_body(
 
 
 def create_page_under_page_service(
-    oauth_token: str,
     parent_page_id: str,
     title: str = "Untitled",
     position: Optional[Dict] = None,
@@ -51,13 +50,12 @@ def create_page_under_page_service(
         position=position,
     )
 
-    result = make_notion_request("POST", "/v1/pages", oauth_token, body=body)
+    result = make_notion_request("POST", "/v1/pages", body=body)
 
     return result
 
 
 def create_workspace_page_service(
-    oauth_token: str,
     title: str = "Untitled",
 ) -> Dict:
     parent = {"type": "workspace", "workspace": True}
@@ -67,13 +65,12 @@ def create_workspace_page_service(
         title=title,
     )
 
-    result = make_notion_request("POST", "/v1/pages", oauth_token, body=body)
+    result = make_notion_request("POST", "/v1/pages", body=body)
 
     return result
 
 
 def update_page_service(
-    oauth_token: str,
     page_id: str,
     properties: Optional[Dict] = None,
     icon: Optional[Dict] = None,
@@ -125,7 +122,7 @@ def update_page_service(
         return {"error": "At least one update parameter must be provided"}
 
     result = make_notion_request(
-        "PATCH", f"/v1/pages/{page_id}", oauth_token, body=body
+        "PATCH", f"/v1/pages/{page_id}", body=body
     )
 
     if "error" in result:
@@ -140,7 +137,6 @@ def update_page_service(
 
 
 def append_text_block_service(
-    oauth_token: str,
     block_id: str,
     type: str,
     content: str,
@@ -181,7 +177,7 @@ def append_text_block_service(
         logger.info(f"Setting position={position}")
 
     result = make_notion_request(
-        "PATCH", f"/v1/blocks/{block_id}/children", oauth_token, body=body
+        "PATCH", f"/v1/blocks/{block_id}/children", body=body
     )
 
     if "error" in result:

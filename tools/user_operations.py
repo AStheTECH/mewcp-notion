@@ -9,7 +9,6 @@ logger = logging.getLogger("notion-mcp-server")
 
 
 def list_users_service(
-    oauth_token: str,
     page_size: int = 100,
     start_cursor: Optional[str] = None,
 ) -> Dict:
@@ -26,7 +25,7 @@ def list_users_service(
         params["start_cursor"] = start_cursor
         logger.info(f"Using cursor: {start_cursor[:20]}...")
 
-    result = make_notion_request("GET", "/v1/users", oauth_token, params=params)
+    result = make_notion_request("GET", "/v1/users", params=params)
 
     if "error" in result:
         logger.error(f"Failed to list users: {result.get('error')}")
@@ -38,14 +37,14 @@ def list_users_service(
     return result
 
 
-def get_user_service(oauth_token: str, user_id: str) -> Dict:
+def get_user_service(user_id: str) -> Dict:
     """
     Returns:
         A user object containing id, name, avatar_url, and type (person or bot).
     """
     logger.info(f"[get_user_service] user_id='{user_id}'")
 
-    result = make_notion_request("GET", f"/v1/users/{user_id}", oauth_token)
+    result = make_notion_request("GET", f"/v1/users/{user_id}")
 
     if "error" in result:
         logger.error(f"Failed to retrieve user: {user_id}: {result.get('error')}")
@@ -57,14 +56,14 @@ def get_user_service(oauth_token: str, user_id: str) -> Dict:
     return result
 
 
-def get_self_service(oauth_token: str) -> Dict:
+def get_self_service() -> Dict:
     """
     Returns:
         A bot user object with owner, workspace_id, workspace_limits, and workspace_name.
     """
     logger.info("[get_self_service] Fetching bot user info")
 
-    result = make_notion_request("GET", "/v1/users/me", oauth_token)
+    result = make_notion_request("GET", "/v1/users/me")
 
     if "error" in result:
         logger.error(f"Failed to retrieve bot user: {result.get('error')}")

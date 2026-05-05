@@ -7,6 +7,7 @@ import argparse
 from typing import Dict, Optional, Literal
 from fastmcp import FastMCP
 from pydantic import Field
+from fastmcp_credentials import CredentialMiddleware, HeaderCredentialBackend
 
 from tools import (
     search_notion_service,
@@ -33,11 +34,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger("notion-mcp-server")
 
-#  FastMCP instance
-mcp = FastMCP("Notion MCP Server")
+backend = HeaderCredentialBackend()
 
-# Expose ASGI app for hosting platform's (e.g. Vercel) Python runtime.
-app = mcp.http_app(path="/mcp", transport="streamable-http")
+#  FastMCP instance
+mcp = FastMCP(
+    "Notion MCP Server",
+    middleware=[CredentialMiddleware(backend)],
+)
+
+# Register credential middleware
 
 
 # ============== Read Operations ==============
@@ -48,7 +53,6 @@ app = mcp.http_app(path="/mcp", transport="streamable-http")
     description="Search all pages and databases by title or list all pages  ",
 )
 def search_notion(
-    oauth_token: str,
     query: str = Field(
         default="", description="Search query string, keep it empty to list all pages"
     ),
@@ -60,17 +64,15 @@ def search_notion(
     ),
     start_cursor: str | None = None,
 ):
-    return search_notion_service(
-        oauth_token, query, filter_type, page_size, start_cursor
-    )
+    return search_notion_service(query, filter_type, page_size, start_cursor)
 
 
 @mcp.tool(
     name="get_page",
     description="Retrieve a Notion page by ID with properties and metadata",
 )
-def get_page(oauth_token: str, page_id: str):
-    return get_page_service(oauth_token, page_id)
+def get_page(page_id: str):
+    return get_page_service(page_id)
 
 
 @mcp.tool(
@@ -78,7 +80,6 @@ def get_page(oauth_token: str, page_id: str):
     description="Retrieve a Notion page with its full content including all child blocks and properties",
 )
 def fetch_page_content(
-    oauth_token: str,
     page_id: str,
     include_children: bool = True,
     recursive: bool = False,
@@ -87,7 +88,6 @@ def fetch_page_content(
     start_cursor: str | None = None,
 ):
     return fetch_page_content_service(
-        oauth_token,
         page_id,
         include_children,
         recursive,
@@ -105,7 +105,6 @@ def fetch_page_content(
     description="Create a new page under a parent page",
 )
 def create_page_under_page(
-    oauth_token: str,
     parent_page_id: str,
     title: str | None = "Untitled New page Created",
     position: Optional[Dict] | None = Field(
@@ -114,7 +113,6 @@ def create_page_under_page(
     ),
 ):
     return create_page_under_page_service(
-        oauth_token,
         parent_page_id,
         title,
         position,
@@ -126,11 +124,9 @@ def create_page_under_page(
     description="Create a new page at a workspace level (without parent page)",
 )
 def create_workspace_page(
-    oauth_token: str,
     title: str | None = "Untitled New page Created",
 ):
     return create_workspace_page_service(
-        oauth_token,
         title,
     )
 
@@ -140,7 +136,6 @@ def create_workspace_page(
     description="Update an existing Notion page's properties and metadata.",
 )
 def update_page(
-    oauth_token: str,
     page_id: str,
     properties: dict | None = None,
     icon: dict | None = None,
@@ -152,7 +147,6 @@ def update_page(
     erase_content: bool | None = None,
 ):
     return update_page_service(
-        oauth_token,
         page_id,
         properties,
         icon,
@@ -170,7 +164,6 @@ def update_page(
     description="Append a text block to a page ",
 )
 def append_text_block(
-    oauth_token: str,
     block_id: str = Field(description="The ID could be page ID or parent block ID"),
     type: Literal[
         "paragraph",
@@ -196,9 +189,7 @@ def append_text_block(
         default=None, description="Position to insert the new block; "
     ),
 ):
-    return append_text_block_service(
-        oauth_token, block_id, type, content, checked, color, position
-    )
+    return append_text_block_service(block_id, type, content, checked, color, position)
 
 
 ########## Databse Tools ##########
@@ -208,16 +199,16 @@ def append_text_block(
     name="get_database",
     description="Retrieve a database object by ID with title, parent, and data sources",
 )
-def get_database(oauth_token: str, database_id: str):
-    return get_database_service(oauth_token, database_id)
+def get_database(database_id: str):
+    return get_database_service(database_id)
 
 
 @mcp.tool(
     name="get_data_source",
     description="Retrieve a data source (database schema/properties) by ID",
 )
-def get_data_source(oauth_token: str, data_source_id: str):
-    return get_data_source_service(oauth_token, data_source_id)
+def get_data_source(data_source_id: str):
+    return get_data_source_service(data_source_id)
 
 
 @mcp.tool(
@@ -225,7 +216,6 @@ def get_data_source(oauth_token: str, data_source_id: str):
     description="Query a data source to get pages with optional filtering and sorting",
 )
 def query_data_source(
-    oauth_token: str,
     data_source_id: str,
     filter: dict | None = None,
     sorts: list | None = None,
@@ -233,7 +223,7 @@ def query_data_source(
     start_cursor: str | None = None,
 ):
     return query_data_source_service(
-        oauth_token, data_source_id, filter, sorts, page_size, start_cursor
+        data_source_id, filter, sorts, page_size, start_cursor
     )
 
 
@@ -242,7 +232,6 @@ def query_data_source(
     description="Create a new database as a child of an existing page",
 )
 def create_database(
-    oauth_token: str,
     parent_id: str,
     title: str = "Untitled Database",
     description: str | None = None,
@@ -252,7 +241,7 @@ def create_database(
     cover: dict | None = None,
 ):
     return create_database_service(
-        oauth_token, parent_id, title, description, properties, is_inline, icon, cover
+        parent_id, title, description, properties, is_inline, icon, cover
     )
 
 
@@ -264,27 +253,26 @@ def create_database(
     description="List all users in the workspace (guests not included)",
 )
 def list_users(
-    oauth_token: str,
     page_size: int = 100,
     start_cursor: str | None = None,
 ):
-    return list_users_service(oauth_token, page_size, start_cursor)
+    return list_users_service(page_size, start_cursor)
 
 
 @mcp.tool(
     name="get_user",
     description="Retrieve a specific user by their ID",
 )
-def get_user(oauth_token: str, user_id: str):
-    return get_user_service(oauth_token, user_id)
+def get_user(user_id: str):
+    return get_user_service(user_id)
 
 
 @mcp.tool(
     name="get_self",
     description="Retrieve the bot user associated with your API token, including owner and workspace info",
 )
-def get_self(oauth_token: str):
-    return get_self_service(oauth_token)
+def get_self():
+    return get_self_service()
 
 
 ########## parsing Argus ##########

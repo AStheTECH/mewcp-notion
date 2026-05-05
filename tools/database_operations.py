@@ -8,10 +8,10 @@ from utils import make_notion_request
 logger = logging.getLogger("notion-mcp-server")
 
 
-def get_database_service(oauth_token: str, database_id: str) -> Dict:
+def get_database_service(database_id: str) -> Dict:
     logger.info(f"[get_database_service] database_id='{database_id}'")
 
-    result = make_notion_request("GET", f"/v1/databases/{database_id}", oauth_token)
+    result = make_notion_request("GET", f"/v1/databases/{database_id}")
 
     if "error" in result:
         logger.error(
@@ -26,11 +26,11 @@ def get_database_service(oauth_token: str, database_id: str) -> Dict:
     return result
 
 
-def get_data_source_service(oauth_token: str, data_source_id: str) -> Dict:
+def get_data_source_service(data_source_id: str) -> Dict:
     logger.info(f"[get_data_source_service] data_source_id='{data_source_id}'")
 
     result = make_notion_request(
-        "GET", f"/v1/data_sources/{data_source_id}", oauth_token
+        "GET", f"/v1/data_sources/{data_source_id}"
     )
 
     if "error" in result:
@@ -45,7 +45,6 @@ def get_data_source_service(oauth_token: str, data_source_id: str) -> Dict:
 
 
 def query_data_source_service(
-    oauth_token: str,
     data_source_id: str,
     filter: Optional[Dict] = None,
     sorts: Optional[List[Dict]] = None,
@@ -68,7 +67,7 @@ def query_data_source_service(
         body["start_cursor"] = start_cursor
 
     result = make_notion_request(
-        "POST", f"/v1/data_sources/{data_source_id}/query", oauth_token, body=body
+        "POST", f"/v1/data_sources/{data_source_id}/query", body=body
     )
 
     if "error" in result:
@@ -82,7 +81,6 @@ def query_data_source_service(
 
 
 def create_database_service(
-    oauth_token: str,
     parent_id: str,
     title: str = "Untitled Database",
     description: Optional[str] = None,
@@ -119,7 +117,7 @@ def create_database_service(
         body["cover"] = cover
         logger.info(f"Setting cover: type={cover.get('type')}")
 
-    result = make_notion_request("POST", "/v1/databases", oauth_token, body=body)
+    result = make_notion_request("POST", "/v1/databases", body=body)
 
     if "error" in result:
         logger.error(f"Failed to create database: {result.get('error')}")
