@@ -1,4 +1,3 @@
----
 
 **Seamless Notion Integration for MCP**
 
