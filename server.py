@@ -39,7 +39,7 @@ backend = HeaderCredentialBackend()
 #  FastMCP instance
 mcp = FastMCP(
     "Notion MCP Server",
-    middleware=[CredentialMiddleware(backend)],
+    middleware=[CredentialMiddleware(backend, "oauth")],
 )
 
 # Register credential middleware
