@@ -42,3 +42,5 @@ mcp_server/templates/
 get_notion_oauth.py
 
 notion_tool.md
+
+/cl-mcp-notion/add-fastmcp-credentials.md
