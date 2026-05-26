@@ -37,8 +37,8 @@ logger = logging.getLogger("notion-mcp-server")
 backend = HeaderCredentialBackend()
 
 #  FastMCP instance
-mcp = FastMCP(
-    "Notion MCP Server",
+mcp = FastMCP("MewCP Notion MCP Server",
+    # stateless_http=True,
     middleware=[CredentialMiddleware(backend, "oauth")],
 )
 
@@ -289,6 +289,10 @@ def parse_args():
     parser.add_argument("--host", help="Host to bind to", default="0.0.0.0")
     parser.add_argument("--port", type=int, help="Port to bind to", default=8000)
     return parser.parse_args()
+
+
+# Expose ASGI app for hosting platforms.
+app = mcp.http_app(path="/mcp", transport="streamable-http", stateless_http=True)
 
 
 if __name__ == "__main__":
