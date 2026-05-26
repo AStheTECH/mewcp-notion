@@ -37,8 +37,8 @@ logger = logging.getLogger("notion-mcp-server")
 backend = HeaderCredentialBackend()
 
 #  FastMCP instance
-mcp = FastMCP("MewCP Notion MCP Server",
-    # stateless_http=True,
+mcp = FastMCP(
+    "MewCP Notion MCP Server",
     middleware=[CredentialMiddleware(backend, "oauth")],
 )
 
