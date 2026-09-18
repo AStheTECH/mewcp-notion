@@ -1,7 +1,7 @@
-fastmcp>=2.14.4
+fastmcp
 pydantic>=2.12.5
 requests>=2.32.5
-fastmcp-credentials>=0.1.1
+fastmcp-credentials>=0.2.0,<0.3.0
 python-json-logger>=2.0.0
 
 
